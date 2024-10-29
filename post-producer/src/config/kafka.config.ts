@@ -1,7 +1,5 @@
 import { Admin, Kafka, logLevel, Producer } from "kafkajs";
 
-
-
 class KafkaConfig {
     private kafka: Kafka;
     private producer: Producer;
@@ -13,12 +11,11 @@ class KafkaConfig {
         this.kafka = new Kafka({
             clientId: 'post-producer',
             brokers: [this.brokers],
-            logLevel: logLevel.INFO // Change to INFO for more verbose logging during development
+            logLevel: logLevel.INFO, // Change to INFO for more verbose logging during development
         });
 
         this.producer = this.kafka.producer();
         this.admin = this.kafka.admin();
-
     }
 
     async connect(): Promise<void> {
@@ -31,9 +28,8 @@ class KafkaConfig {
         }
     }
 
-    async createTopic(topic: string): Promise<void> {
+    async createTopic(topic: string, numPartitions: number = 1): Promise<void> {
         try {
-            // Check if the topic already exists before creating
             const existingTopics = await this.admin.listTopics();
             if (existingTopics.includes(topic)) {
                 console.log(`Topic already exists: ${topic}`);
@@ -41,9 +37,9 @@ class KafkaConfig {
             }
 
             await this.admin.createTopics({
-                topics: [{ topic, numPartitions: 1 }]
+                topics: [{ topic, numPartitions }],
             });
-            console.log("Topic Created: ", topic);
+            console.log(`Topic Created: ${topic} with ${numPartitions} partition(s)`);
         } catch (error) {
             console.error("Error creating topic: ", error);
         }
@@ -53,7 +49,7 @@ class KafkaConfig {
         try {
             await this.producer.send({
                 topic,
-                messages: [{ value: message }]
+                messages: [{ value: message }],
             });
             console.log("Message sent to topic: ", topic);
         } catch (error) {
@@ -86,5 +82,6 @@ process.on('SIGTERM', async () => {
     await kafkaConfig.disconnect();
     process.exit(0);
 });
+
 
 export default kafkaConfig;
